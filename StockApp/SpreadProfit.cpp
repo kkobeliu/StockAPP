@@ -78,8 +78,7 @@ BOOL SpreadProfit::OnInitDialog()
 	SetDlgItemTextW(IDC_EDIT_PROFIT,PROFIT_DEFAULT_VALUE);
 	SetDlgItemTextW(IDC_EDIT_PROFIT,PROFIT_DEFAULT_VALUE);
 	SetDlgItemTextW(IDC_EDIT_PROFIT,PROFIT_DEFAULT_VALUE);
-	CString fff = L"123.5aaa";
-	bool aa = isNumeric(fff);
+
 	/*
 	CButton * pWnd = (CButton *)GetDlgItem(IDC_BUTTON_CAL_PROFIT); 
 	pWnd->ModifyStyle(0, SS_BITMAP); 
@@ -110,7 +109,6 @@ BOOL SpreadProfit::OnInitDialog()
 		*/
 	return TRUE;  // return TRUE unless you set the focus to a control
 	
-	// EXCEPTION: OCX 屬性頁應傳回 FALSE
 }
 
 
@@ -127,9 +125,7 @@ int SpreadProfit::testt(void)
 
 void SpreadProfit::OnBnClickedButtonCalProfit()
 {
-
 	CalProfit();
-	
 }
 
 char * SpreadProfit::CStringToCharPtr(CString input)
@@ -145,11 +141,11 @@ char * SpreadProfit::CStringToCharPtr(CString input)
 void SpreadProfit::OnDeltaposSpinAmount(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMUPDOWN pNMUpDown = reinterpret_cast<LPNMUPDOWN>(pNMHDR);
-	// TODO: 在此加入控制項告知處理常式程式碼
+
 	CString str;
 	
 	GetDlgItemTextW(IDC_EDIT_AMOUNT,str);
-	Shares = _wtof(str);
+	Shares = _wtoi(str);
 	if (pNMUpDown->iDelta == -1)//click up
 	{
 		Shares = Shares + 100;
@@ -215,78 +211,43 @@ int SpreadProfit::CalProfit()
 }
 
 
-//20140819 TODO:看有沒有辦法把BUY跟SELL的處理血成FUNCTION直接CALL就好
+//20140819 TODO: write a function for click buy/sell spin control calling.20140827 finished
 void SpreadProfit::OnDeltaposSpinBuyPrice(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMUPDOWN pNMUpDown = reinterpret_cast<LPNMUPDOWN>(pNMHDR);
-	CString str;
-	float CurSellingVal = 0;
-	float ChangeUnit = 0;
-	GetDlgItemTextW(IDC_EDIT_BUY_PRICE,str);
 
-	if (isNumeric(str))
-	{
-		CurSellingVal = (float)_wtof(str);
-	} 
-	else
-	{
-		AfxMessageBox(L"please enter a number!");
-		return;
-	}
+	CalValueChange(pNMUpDown,IDC_EDIT_BUY_PRICE);
 
-
-
-	if (CurSellingVal == 10 || CurSellingVal == 50 || CurSellingVal == 100 || CurSellingVal == 500 || CurSellingVal == 1000)
-	{//is price boundary
-		if (pNMUpDown->iDelta == -1)//click up
-		{
-			ChangeUnit = CalChangeUnit(CurSellingVal+ 5*pNMUpDown->iDelta*(-1));
-			CurSellingVal = CurSellingVal + ChangeUnit*pNMUpDown->iDelta*(-1);
-		} 
-		else//click down: pNMUpDown->iDelta == 1
-		{
-			ChangeUnit = CalChangeUnit(CurSellingVal+ 5*pNMUpDown->iDelta*(-1));
-			CurSellingVal = CurSellingVal + ChangeUnit*pNMUpDown->iDelta*(-1);
-		}
-	} 
-	else
-	{//not price boundary
-		PriceRevise(&CurSellingVal, pNMUpDown);
-		if (RevisedFlag == 0) //no revise
-		{
-			ChangeUnit = CalChangeUnit(CurSellingVal);
-			CurSellingVal = CurSellingVal + ChangeUnit*pNMUpDown->iDelta*(-1);
-		}
-	}
-
-	str.Format(L"%.2f",CurSellingVal);
-	SetDlgItemTextW(IDC_EDIT_BUY_PRICE,str);
-
-	CalProfit();
-	// TODO: 在此加入控制項告知處理常式程式碼
 	*pResult = 0;
 }
 
 void SpreadProfit::OnDeltaposSpinSellPrice(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMUPDOWN pNMUpDown = reinterpret_cast<LPNMUPDOWN>(pNMHDR);
+
+	CalValueChange(pNMUpDown,IDC_EDIT_SELL_PRICE);
+
+	*pResult = 0;
+}
+
+int SpreadProfit::CalValueChange(LPNMUPDOWN pNMUpDown, int EditCtrlID)
+{
 	CString str;
 	float CurSellingVal = 0;
 	float ChangeUnit = 0;
-	GetDlgItemTextW(IDC_EDIT_SELL_PRICE,str);
 
-	if (isNumeric(str))
+	GetDlgItemTextW(EditCtrlID,str);
+
+	if (isNumeric(str))//do not calculate the value if input is not a number
 	{
 		CurSellingVal = (float)_wtof(str);
 	} 
 	else
 	{
 		AfxMessageBox(L"please enter a number!");
-		return;
+		return 0;
 	}
-	
 
-	
 	if (CurSellingVal == 10 || CurSellingVal == 50 || CurSellingVal == 100 || CurSellingVal == 500 || CurSellingVal == 1000)
 	{//is price boundary
 		if (pNMUpDown->iDelta == -1)//click up
@@ -309,18 +270,18 @@ void SpreadProfit::OnDeltaposSpinSellPrice(NMHDR *pNMHDR, LRESULT *pResult)
 			CurSellingVal = CurSellingVal + ChangeUnit*pNMUpDown->iDelta*(-1);
 		}
 	}
-	
+
 	str.Format(L"%.2f",CurSellingVal);
-	SetDlgItemTextW(IDC_EDIT_SELL_PRICE,str);
+	SetDlgItemTextW(EditCtrlID,str);
 
 	CalProfit();
-	// TODO: 在此加入控制項告知處理常式程式碼
-	*pResult = 0;
+
+	return 1;
 }
 
 //using this function to get change unit for each price range
 float SpreadProfit::CalChangeUnit(float InputPrice)
-{//20142822 ToDo: 
+{
 	if (InputPrice < 10)
 	{
 		return BASE001;
@@ -362,7 +323,8 @@ BOOL SpreadProfit::isNumeric( CString  text)
 	}
 
 	return bNumeric;
-} 
+} //end of isNumeric
+
 #define EPS 1E-9 // 定義 EPS = 10^-6
 int SpreadProfit::PriceRevise(float *CurPrice, LPNMUPDOWN pNMUpDown)
 {

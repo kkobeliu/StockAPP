@@ -39,6 +39,7 @@ public:
 	char *CStringToCharPtr(CString input);
 	float CalChangeUnit(float InputPrice);
 	int CalProfit();
+	int CalValueChange(LPNMUPDOWN pNMUpDown, int EditCtrlID);
 	BOOL isNumeric( CString text);
 	int PriceRevise(float *CurPrice , LPNMUPDOWN pNMUpDown);
 	afx_msg void OnBnClickedButtonCalProfit();
